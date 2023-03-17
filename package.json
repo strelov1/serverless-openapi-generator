@@ -1,5 +1,5 @@
 {
-  "name": "serverless-openapi-generator",
+  "name": "sls-openapi-generator",
   "version": "0.0.1",
   "description": "A utility to document your serveless API in OpenAPI format",
   "main": "dist/index.js",
@@ -18,7 +18,8 @@
     "/types"
   ],
   "dependencies": {
-    "@stoplight/spectral": "^5.9.1",
+    "@stoplight/spectral-cli": "^6.6.0",
+    "child_process": "^1.0.2",
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {

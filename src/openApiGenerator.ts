@@ -1,17 +1,6 @@
 import { OpenAPIV3 } from 'openapi-types';
-import {
-  Spectral,
-  isOpenApiv2,
-  isOpenApiv3,
-  isJSONSchemaDraft4,
-  IRuleResult,
-} from '@stoplight/spectral';
-import { clone } from './utils';
 import Serverless from 'serverless';
-
-interface ICustomRule extends Omit<IRuleResult, 'severity'> {
-  severity: string;
-}
+import { clone } from './utils';
 
 type OpenAPIV3CustomDocumentation = {
   openapi: string;
@@ -25,18 +14,12 @@ type OpenAPIV3CustomDocumentation = {
 
 export default class OpenApiGenerator {
   public definition: OpenAPIV3.Document;
-  public spectral = new Spectral();
 
   /**
    * Constructor
    * @param schema The intial OpenAPI schema
    */
   constructor(schema: OpenAPIV3CustomDocumentation) {
-    // Register validation rules
-    this.spectral.registerFormat('oas2', isOpenApiv2);
-    this.spectral.registerFormat('oas3', isOpenApiv3);
-    this.spectral.registerFormat('json-schema-draft4', isJSONSchemaDraft4);
-
     const { openapi, info, servers = [], components, security = [], tags, externalDocs } = schema;
 
     this.definition = {
@@ -82,7 +65,7 @@ export default class OpenApiGenerator {
 
     Object.keys(functions).map((key) => {
       const httpEvents = functions[key].events
-        .filter((event) => !!(event as any).http)
+        .filter((event) => !!(event as any).http?.openapi)
         .map((event) => (event as any).http as ServerlessOpenapiGenerator.HttpFunctionEvent);
 
       httpEvents.map((event) => {
@@ -137,19 +120,5 @@ export default class OpenApiGenerator {
     if (cleanedSchema.$schema) delete cleanedSchema.$schema;
 
     return cleanedSchema;
-  }
-
-  /**
-   * Validates OpenAPI v3 Specification
-   * @returns A valid OpenAPI specification object
-   */
-  public async validate(): Promise<ICustomRule[]> {
-    await this.spectral.loadRuleset('spectral:oas');
-    const results = await this.spectral.run(this.definition);
-
-    return results.map((result) => {
-      const severityOptions = ['Error', 'Warning', 'Information', 'Hint'];
-      return { ...result, severity: severityOptions[result.severity] };
-    });
   }
 }

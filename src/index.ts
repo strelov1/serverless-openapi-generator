@@ -1,8 +1,9 @@
 import Serverless from 'serverless';
-import OpenApiGenerator from './openApiGenerator';
 import YAML from 'js-yaml';
-import { writeFileSync } from 'fs';
-import { inspect } from 'util';
+import { writeFile, mkdtemp, unlink, rmdir } from 'node:fs/promises';
+import { execSync } from "child_process";
+import OpenApiGenerator from './openApiGenerator';
+import path from "node:path";
 
 type CliOptions = {
   format: string;
@@ -106,15 +107,6 @@ class ServerlessOpenapiGenerator {
     generator.parseFunctions(functions);
 
     try {
-      const validationResults = await generator.validate();
-
-      this.log(inspect(validationResults, false, null), { bold: true });
-
-      // Do not generate a file if there are errors
-      if (validationResults.filter((result) => result.severity === 'Error').length > 0) {
-        return;
-      }
-
       const cliOptions = this.handleCliInput();
 
       const output =
@@ -122,13 +114,29 @@ class ServerlessOpenapiGenerator {
           ? YAML.dump(generator.definition)
           : JSON.stringify(generator.definition);
 
-      writeFileSync(cliOptions.output, output);
+      const tmpDir = await mkdtemp('sls-');
+      const tmpFile = tmpDir + path.sep + cliOptions.output;
+
+      try {
+        await writeFile(tmpFile, output);
+        const validateCommand = `spectral lint ${tmpFile}`;
+        this.log(validateCommand);
+        this.log(execSync(validateCommand).toString());
+      } catch (err) {
+        this.log(err.message, { bold: true, color: 'red' });
+      } finally {
+        await unlink(tmpFile);
+        await rmdir(tmpDir);
+      }
+
+
+      await writeFile(cliOptions.output, output);
 
       this.log(`OpenAPI Generation Successful. Written to file ${cliOptions.output}`, {
         color: 'green',
         bold: true,
       });
-    } catch (err) {
+    } catch (err: any) {
       this.log(err.message, { bold: true, color: 'red' });
     }
   }

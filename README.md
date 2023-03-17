@@ -7,14 +7,14 @@ A simple OpenAPI 3 definition generator for Serverless projects that follows the
 
 ### Install
 ```bash
-npm install serverless-openapi --save-dev
+npm install sls-openapi-generator --save-dev
 ```
 
 ### Configuration
 Add this plugin to the `plugins` section of your `serverless.yml` file.
 ```yaml
 plugins:
-  - serverless-openapi
+  - sls-openapi-generator
 ```
 
 ### Generating a defintion file
